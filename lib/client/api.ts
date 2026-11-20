@@ -1,26 +1,36 @@
 /** Typed wrappers around Aeris's own API routes, used by the browser. */
-import type { Answer } from "../ai/ask";
-import type { IntakeResult } from "../ai/intake";
+import type { z } from "zod";
 import { categorizePm25, pm25ToAqi } from "../aqi/cpcb";
 import type { Profile } from "../exposure/profile";
 import type { Language } from "../i18n";
-import type { AirData, PlanResponse } from "./types";
+import { airResponseSchema, answerSchema, intakeResultSchema, planResponseSchema } from "./schemas";
+import type { AirData } from "./types";
 
 export class ApiError extends Error {
-  constructor(readonly status: number) {
-    super(`Request failed with status ${status}`);
+  constructor(
+    readonly status: number,
+    reason = `Request failed with status ${status}`
+  ) {
+    super(reason);
     this.name = "ApiError";
   }
 }
 
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
+/** Fetches JSON and parses it with `schema`; a malformed reply is an error, not a cast. */
+async function request<S extends z.ZodType>(
+  url: string,
+  schema: S,
+  init?: RequestInit
+): Promise<z.output<S>> {
   const response = await fetch(url, init);
   if (!response.ok) throw new ApiError(response.status);
-  return (await response.json()) as T;
+  const parsed = schema.safeParse(await response.json());
+  if (!parsed.success) throw new ApiError(response.status, "Unexpected response shape");
+  return parsed.data;
 }
 
-const postJson = <T>(url: string, body: unknown): Promise<T> =>
-  request<T>(url, {
+const postJson = <S extends z.ZodType>(url: string, schema: S, body: unknown) =>
+  request(url, schema, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -32,9 +42,7 @@ export async function fetchAir(lookup: AirLookup): Promise<AirData> {
   const params = new URLSearchParams(
     Object.entries(lookup).map(([key, value]) => [key, String(value)])
   );
-  const data = await request<Omit<AirData, "source"> & { place: AirData["place"] }>(
-    `/api/air?${params}`
-  );
+  const data = await request(`/api/air?${params}`, airResponseSchema);
   return { ...data, source: "model" };
 }
 
@@ -53,13 +61,14 @@ export function manualAir(pm25: number): AirData {
 const airPayload = (air: AirData) => ({ pm25: air.pm25, hourly: air.hourly });
 
 export const requestPlan = (profile: Profile, air: AirData, language: Language) =>
-  postJson<PlanResponse>("/api/plan", { profile, air: airPayload(air), language });
+  postJson("/api/plan", planResponseSchema, { profile, air: airPayload(air), language });
 
 export const requestAnswer = (
   profile: Profile,
   air: AirData,
   language: Language,
   question: string
-) => postJson<Answer>("/api/ask", { profile, air: airPayload(air), language, question });
+) => postJson("/api/ask", answerSchema, { profile, air: airPayload(air), language, question });
 
-export const requestIntake = (text: string) => postJson<IntakeResult>("/api/intake", { text });
+export const requestIntake = (text: string) =>
+  postJson("/api/intake", intakeResultSchema, { text });

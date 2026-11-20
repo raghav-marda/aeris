@@ -3,10 +3,10 @@
  * sends a constrained prompt, asks for JSON, and validates the reply against
  * a zod schema, so unvalidated model output never reaches the rest of the app.
  */
+import { geminiApiKey, geminiModel } from "../env";
 import { z, type ZodType } from "zod";
 import { fetchJson, UpstreamError } from "../http";
 
-const DEFAULT_MODEL = "gemini-2.5-flash";
 const ENDPOINT_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 const REQUEST_TIMEOUT_MS = 20_000;
 const DEFAULT_TEMPERATURE = 0.3;
@@ -30,7 +30,7 @@ export interface StructuredRequest<T> {
 }
 
 export function isGeminiConfigured(): boolean {
-  return Boolean(process.env.GEMINI_API_KEY);
+  return geminiApiKey() !== null;
 }
 
 function extractText(envelope: z.infer<typeof EnvelopeSchema>): string {
@@ -40,10 +40,10 @@ function extractText(envelope: z.infer<typeof EnvelopeSchema>): string {
 
 /** Calls Gemini and returns schema-validated JSON, or throws an UpstreamError. */
 export async function generateStructured<T>(request: StructuredRequest<T>): Promise<T> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = geminiApiKey();
   if (!apiKey) throw new UpstreamError("The AI service is not configured.");
 
-  const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
+  const model = geminiModel();
   const envelope = await fetchJson(
     `${ENDPOINT_BASE}/${model}:generateContent`,
     EnvelopeSchema,

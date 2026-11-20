@@ -6,6 +6,7 @@
  */
 import { z } from "zod";
 import { COMMUTE_MODES, ProfileSchema, type CommuteMode, type Profile } from "../exposure/profile";
+import { logError } from "../log";
 import { isGeminiConfigured, generateStructured } from "./gemini";
 import { fenceUserText } from "./prompt";
 
@@ -98,10 +99,7 @@ export async function extractIntake(text: string): Promise<IntakeResult> {
     });
     return { intake, source: "ai" };
   } catch (error) {
-    console.error(
-      "extractIntake fell back:",
-      error instanceof Error ? error.name : "unknown error"
-    );
+    logError("extractIntake fell back", error);
     return { intake: heuristicIntake(text), source: "fallback" };
   }
 }

@@ -21,9 +21,14 @@ function notifyLocal(key: string) {
   tabListeners.get(key)?.forEach((l) => l());
 }
 
+/**
+ * `isValid` guards what comes back from storage: anything that fails it (old
+ * format, hand-edited, corrupt) is ignored and the fallback is used instead.
+ */
 export function useLocalStorageState<T>(
   key: string,
-  fallback: T
+  fallback: T,
+  isValid: (value: unknown) => value is T
 ): [T, (next: T | ((prev: T) => T)) => void] {
   // Captured once: callers may pass a fresh object/array literal as
   // `fallback` on every render, but the fallback value itself is not
@@ -49,14 +54,15 @@ export function useLocalStorageState<T>(
     let parsed: T = fallbackRef.current;
     if (raw !== null) {
       try {
-        parsed = JSON.parse(raw) as T;
+        const value: unknown = JSON.parse(raw);
+        if (isValid(value)) parsed = value;
       } catch {
         parsed = fallbackRef.current;
       }
     }
     cacheRef.current = { key, raw, parsed };
     return parsed;
-  }, [key]);
+  }, [key, isValid]);
 
   const getServerSnapshot = useCallback((): T => fallbackRef.current, []);
 

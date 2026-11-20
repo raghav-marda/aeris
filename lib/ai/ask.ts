@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { Plan } from "../exposure/planner";
 import type { Profile } from "../exposure/profile";
 import { getMessages, type Language } from "../i18n";
+import { logError } from "../log";
 import { buildFacts } from "./facts";
 import { isGeminiConfigured } from "./gemini";
 import { generateGrounded } from "./grounded";
@@ -60,10 +61,7 @@ export async function answerQuestion(
     });
     return { answer: result.answer, source: "ai" };
   } catch (error) {
-    console.error(
-      "answerQuestion fell back:",
-      error instanceof Error ? error.name : "unknown error"
-    );
+    logError("answerQuestion fell back", error);
     return fallbackAnswer(plan, language);
   }
 }

@@ -3,6 +3,7 @@
  * validation and consistent error responses. Routes only supply the schema
  * and the business logic.
  */
+import { logError } from "../log";
 import { NextResponse } from "next/server";
 import type { ZodType } from "zod";
 import { clientKeyFrom, isRateLimited } from "../rateLimit";
@@ -47,7 +48,7 @@ export function postHandler<T>(
     try {
       return NextResponse.json(await run(input));
     } catch (error) {
-      console.error(`${bucket} failed:`, error instanceof Error ? error.name : "unknown error");
+      logError(`${bucket} failed`, error);
       const status = error instanceof UpstreamError && error.status === 404 ? 404 : 502;
       return jsonError("The request could not be completed.", status);
     }

@@ -4,6 +4,7 @@ import { jsonError } from "@/lib/api/handler";
 import { categorizePm25, pm25ToAqi } from "@/lib/aqi/cpcb";
 import { fetchAirSnapshot, geocodeCity, type Place } from "@/lib/air/openMeteo";
 import { UpstreamError } from "@/lib/http";
+import { logError } from "@/lib/log";
 import { clientKeyFrom, isRateLimited } from "@/lib/rateLimit";
 
 const CURRENT_LOCATION_NAME = "Your location";
@@ -37,7 +38,7 @@ export async function GET(req: Request) {
     });
   } catch (error) {
     const notFound = error instanceof UpstreamError && error.status === 404;
-    console.error("air failed:", error instanceof Error ? error.name : "unknown error");
+    logError("air failed", error);
     return jsonError(
       notFound ? "No matching place was found." : "Air data is unavailable.",
       notFound ? 404 : 502

@@ -2,16 +2,23 @@
 
 import { useCallback, useState } from "react";
 import { DEFAULT_PROFILE, type Profile } from "../exposure/profile";
-import type { Language } from "../i18n";
+import { LANGUAGES, type Language } from "../i18n";
 import { useLocalStorageState } from "../useLocalStorageState";
 import { requestPlan } from "./api";
 import type { AirData, PlanState } from "./types";
 
 const LANGUAGE_KEY = "aeris.language";
 
+const isLanguage = (value: unknown): value is Language =>
+  LANGUAGES.some((candidate) => candidate === value);
+
 /** Owns the app's state and the one action that talks to the plan API. */
 export function useAeris() {
-  const [language, setStoredLanguage] = useLocalStorageState<Language>(LANGUAGE_KEY, "en");
+  const [language, setStoredLanguage] = useLocalStorageState<Language>(
+    LANGUAGE_KEY,
+    "en",
+    isLanguage
+  );
   const [air, setAir] = useState<AirData | null>(null);
   const [profile, setProfile] = useState<Profile>(DEFAULT_PROFILE);
   const [planState, setPlanState] = useState<PlanState>({ status: "idle" });

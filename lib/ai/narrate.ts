@@ -9,6 +9,7 @@ import { ACTION_IDS, type ActionId } from "../exposure/actions";
 import type { Plan } from "../exposure/planner";
 import type { Profile } from "../exposure/profile";
 import { getMessages, type Language } from "../i18n";
+import { logError } from "../log";
 import { buildFacts } from "./facts";
 import { isGeminiConfigured } from "./gemini";
 import { generateGrounded } from "./grounded";
@@ -79,7 +80,7 @@ export async function narratePlan(
     }
     return { headline: result.headline, summary: result.summary, actionNotes: notes, source: "ai" };
   } catch (error) {
-    console.error("narratePlan fell back:", error instanceof Error ? error.name : "unknown error");
+    logError("narratePlan fell back", error);
     return fallbackNarration(plan, language);
   }
 }

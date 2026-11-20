@@ -13,6 +13,14 @@ interface A11yState {
 
 const DEFAULT_STATE: A11yState = { highContrast: false, largeText: false };
 
+const isA11yState = (value: unknown): value is A11yState =>
+  typeof value === "object" &&
+  value !== null &&
+  "highContrast" in value &&
+  typeof value.highContrast === "boolean" &&
+  "largeText" in value &&
+  typeof value.largeText === "boolean";
+
 const LANGUAGE_LABELS: Readonly<Record<Language, string>> = { en: "English", hi: "हिन्दी" };
 
 const toggleClass =
@@ -27,7 +35,11 @@ interface Props {
 
 /** Language switch plus high-contrast and large-text toggles, remembered per device. */
 export default function AccessibilityBar({ messages, language, onLanguageChange }: Props) {
-  const [state, setState] = useLocalStorageState<A11yState>(STORAGE_KEY, DEFAULT_STATE);
+  const [state, setState] = useLocalStorageState<A11yState>(
+    STORAGE_KEY,
+    DEFAULT_STATE,
+    isA11yState
+  );
 
   useEffect(() => {
     document.documentElement.classList.toggle("high-contrast", state.highContrast);
