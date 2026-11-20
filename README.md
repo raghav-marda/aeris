@@ -7,7 +7,7 @@ hacks and sustainable alternatives, each with the **exact, quantified impact** o
 
 > Built for Hack2Skill PromptWars, Challenge 6: _Urban Air Quality Assistant_.
 
-**Live demo:** _added after deployment_ · **Languages:** English and Hindi
+**Live demo:** https://aeris-plum-five.vercel.app · **Languages:** English and Hindi
 
 ---
 
