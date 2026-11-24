@@ -9,7 +9,7 @@ import {
 export function makeHourly(values: readonly number[], startHour = 0, length = 24): HourlyPm25[] {
   return Array.from({ length }, (_, i) => ({
     hour: (startHour + i) % 24,
-    pm25: values[i % values.length],
+    pm25: values[i % values.length] ?? 0,
   }));
 }
 

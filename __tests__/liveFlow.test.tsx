@@ -43,7 +43,8 @@ function stubApi(routes: Routes) {
   const handler = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const match = Object.keys(routes).find((prefix) => url.includes(prefix));
-    return match ? routes[match](init) : json({}, 500);
+    const route = match ? routes[match] : undefined;
+    return route ? route(init) : json({}, 500);
   });
   vi.stubGlobal("fetch", handler);
   return handler;
@@ -94,7 +95,7 @@ describe("live air", () => {
 
     await user.click(screen.getByRole("button", { name: /use my location/i }));
     await screen.findByText(/showing air for delhi/i);
-    expect(String(api.mock.calls[0][0])).toContain("lat=28.61&lon=77.21");
+    expect(String(api.mock.calls[0]?.[0])).toContain("lat=28.61&lon=77.21");
   });
 
   it("explains when location access is refused", async () => {

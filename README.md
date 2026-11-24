@@ -95,6 +95,9 @@ station, so the AQI shown is _indicative_.
 - **Problem alignment.** Location- and lifestyle-tailored low-emission routines, indoor air hacks
   and sustainable alternatives, each with a clear, quantified explanation of its direct impact.
 
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the layer diagram and design decisions,
+[SECURITY.md](SECURITY.md) for the security model and [CHANGELOG.md](CHANGELOG.md) for changes.
+
 ## Run it locally
 
 ```bash

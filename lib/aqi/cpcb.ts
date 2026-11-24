@@ -23,8 +23,10 @@ interface Band {
 const SEVERE_INTERPOLATION_CEILING = 380;
 const MAX_AQI = 500;
 
+const LOWEST_BAND: Band = { category: "good", pm25Low: 0, pm25High: 30, aqiLow: 0, aqiHigh: 50 };
+
 export const CPCB_PM25_BANDS: readonly Band[] = [
-  { category: "good", pm25Low: 0, pm25High: 30, aqiLow: 0, aqiHigh: 50 },
+  LOWEST_BAND,
   { category: "satisfactory", pm25Low: 31, pm25High: 60, aqiLow: 51, aqiHigh: 100 },
   { category: "moderate", pm25Low: 61, pm25High: 90, aqiLow: 101, aqiHigh: 200 },
   { category: "poor", pm25Low: 91, pm25High: 120, aqiLow: 201, aqiHigh: 300 },
@@ -48,7 +50,7 @@ export const POOR_PM25_THRESHOLD = 91;
 function findBand(pm25: number): Band {
   const value = Math.max(0, pm25);
   const match = [...CPCB_PM25_BANDS].reverse().find((band) => value >= band.pm25Low);
-  return match ?? CPCB_PM25_BANDS[0];
+  return match ?? LOWEST_BAND;
 }
 
 export function categorizePm25(pm25: number): AqiCategory {

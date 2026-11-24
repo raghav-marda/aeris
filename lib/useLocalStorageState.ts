@@ -68,8 +68,9 @@ export function useLocalStorageState<T>(
 
   const subscribe = useCallback(
     (onStoreChange: Listener) => {
-      if (!tabListeners.has(key)) tabListeners.set(key, new Set());
-      tabListeners.get(key)!.add(onStoreChange);
+      const listeners = tabListeners.get(key) ?? new Set<Listener>();
+      listeners.add(onStoreChange);
+      tabListeners.set(key, listeners);
 
       const handleStorageEvent = (e: StorageEvent) => {
         if (e.key === key) onStoreChange();

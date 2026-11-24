@@ -113,6 +113,15 @@ export interface HourRange {
 
 const isConsecutive = (a: HourlyPm25, b: HourlyPm25): boolean => b.hour === (a.hour + 1) % 24;
 
+/** True when every reading sits inside `range` and each hour follows the one before. */
+function isUsableRun(run: readonly HourlyPm25[], range: HourRange): boolean {
+  return run.every((reading, index) => {
+    const previous = run[index - 1];
+    const inRange = reading.hour >= range.start && reading.hour < range.end;
+    return inRange && (previous === undefined || isConsecutive(previous, reading));
+  });
+}
+
 /** Lowest-PM2.5 run of consecutive hours that all fall inside `range`. */
 export function findBestWindow(
   hourly: readonly HourlyPm25[],
@@ -124,13 +133,13 @@ export function findBestWindow(
 
   for (let i = 0; i + length <= hourly.length; i++) {
     const run = hourly.slice(i, i + length);
-    const inRange = run.every((h) => h.hour >= range.start && h.hour < range.end);
-    const contiguous = run.every((h, idx) => idx === 0 || isConsecutive(run[idx - 1], h));
-    if (!inRange || !contiguous) continue;
+    const first = run[0];
+    const last = run[run.length - 1];
+    if (!first || !last || !isUsableRun(run, range)) continue;
 
     const meanPm25 = round1(mean(run.map((h) => h.pm25)));
     if (best === null || meanPm25 < best.meanPm25) {
-      best = { startHour: run[0].hour, endHour: (run[length - 1].hour + 1) % 24, meanPm25 };
+      best = { startHour: first.hour, endHour: (last.hour + 1) % 24, meanPm25 };
     }
   }
   return best;

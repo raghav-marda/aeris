@@ -4,11 +4,11 @@
  * exposure after" and overlapping actions never double count.
  */
 import { POOR_PM25_THRESHOLD } from "../aqi/cpcb";
+import type { EFFORT_COST } from "./constants";
 import {
   COMMUTE_EXPOSURE_FACTOR,
   COMMUTE_HOURS,
   DAYTIME_HOURS,
-  EFFORT_COST,
   INDOOR_INFILTRATION,
   MASKABLE_MODES,
   MINUTES_PER_HOUR,

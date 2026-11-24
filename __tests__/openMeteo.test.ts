@@ -80,7 +80,7 @@ describe("fetchAirSnapshot", () => {
     expect(snapshot.pm25).toBe(120);
     expect(snapshot.hourly).toHaveLength(2);
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(String(fetchMock.mock.calls[0][0])).toContain("timezone=auto");
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain("timezone=auto");
   });
 
   it("falls back to the first forecast hour when the current value is missing", async () => {

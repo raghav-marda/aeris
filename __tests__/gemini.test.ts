@@ -31,9 +31,9 @@ describe("generateStructured", () => {
 
     await expect(generateStructured(request)).resolves.toEqual({ answer: "ok" });
 
-    const [url, init] = fetchMock.mock.calls[0];
+    const [url, init] = fetchMock.mock.calls[0] ?? [];
     expect(String(url)).not.toContain("test-key");
-    expect(init.headers["x-goog-api-key"]).toBe("test-key");
+    expect(init?.headers["x-goog-api-key"]).toBe("test-key");
   });
 
   it("throws when the key is missing", async () => {
@@ -82,7 +82,7 @@ describe("generateGrounded", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(generateGrounded(grounded)).resolves.toEqual({ answer: "It is 42." });
-    const repairBody = JSON.parse(fetchMock.mock.calls[1][1].body);
+    const repairBody = JSON.parse(fetchMock.mock.calls[1]?.[1].body);
     expect(repairBody.contents[0].parts[0].text).toContain("99");
   });
 

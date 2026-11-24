@@ -59,7 +59,7 @@ describe("narratePlan", () => {
   });
 
   it("returns AI text when every number is grounded", async () => {
-    const topId = plan.actions[0].id;
+    const topId = plan.actions[0]?.id ?? "close_windows";
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue(
