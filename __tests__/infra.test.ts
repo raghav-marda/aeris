@@ -1,6 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ACTION_IDS } from "../lib/exposure/actions";
-import { clientKeyFrom, isRateLimited } from "../lib/rateLimit";
+import {
+  checkRateLimit,
+  clientKeyFrom,
+  isRateLimited,
+  MAX_REQUESTS_PER_WINDOW,
+  WINDOW_MS,
+} from "../lib/rateLimit";
 import { createTtlCache } from "../lib/ttlCache";
 import { getMessages, formatHour, LANGUAGES } from "../lib/i18n";
 import type { HabitId } from "../lib/exposure/planner";
@@ -42,6 +48,34 @@ describe("rate limiting", () => {
     expect(results.slice(0, 12).some(Boolean)).toBe(false);
     expect(results.at(-1)).toBe(true);
     expect(isRateLimited("another-key")).toBe(false);
+  });
+
+  it("starts a fresh window once the old one has ended", () => {
+    const start = 1_000_000;
+    for (let i = 0; i <= MAX_REQUESTS_PER_WINDOW; i++) checkRateLimit("window-test", start);
+    expect(checkRateLimit("window-test", start + 1).limited).toBe(true);
+    expect(checkRateLimit("window-test", start + WINDOW_MS).limited).toBe(false);
+  });
+
+  it("reports how long until the window ends", () => {
+    const start = 2_000_000;
+    for (let i = 0; i < MAX_REQUESTS_PER_WINDOW; i++) checkRateLimit("retry-test", start);
+    const result = checkRateLimit("retry-test", start + 45_000);
+    expect(result.limited).toBe(true);
+    expect(result.retryAfterSeconds).toBe(15);
+  });
+
+  it("keeps memory bounded without evicting a key that is only being reset", () => {
+    const start = 3_000_000;
+    for (let i = 0; i < 5_000; i++) checkRateLimit(`bound-${i}`, start);
+    // Resetting an expired key must not push out an unrelated one.
+    checkRateLimit("bound-0", start + WINDOW_MS);
+    expect(checkRateLimit("bound-1", start + WINDOW_MS - 1).retryAfterSeconds).toBeLessThanOrEqual(
+      60
+    );
+    // A brand-new key makes room by dropping expired windows, not live ones.
+    checkRateLimit("brand-new", start + WINDOW_MS);
+    expect(checkRateLimit("brand-new", start + WINDOW_MS).limited).toBe(false);
   });
 
   it("reads the client from x-forwarded-for", () => {

@@ -64,6 +64,22 @@ describe("POST /api/plan", () => {
     expect((await postPlan(post(null, freshIp(), huge))).status).toBe(413);
   });
 
+  it("measures the body limit in bytes, not characters", async () => {
+    // 8,000 three-byte characters are 24,000 bytes but only 8,000 characters.
+    const wide = JSON.stringify({ padding: "\u20ac".repeat(8_000) });
+    expect((await postPlan(post(null, freshIp(), wide))).status).toBe(413);
+  });
+
+  it("tells a rate-limited client when to retry", async () => {
+    const ip = freshIp();
+    let last = await postPlan(post(validPlanBody, ip));
+    for (let i = 0; i < 13; i++) last = await postPlan(post(validPlanBody, ip));
+    expect(last.status).toBe(429);
+    const retryAfter = Number(last.headers.get("Retry-After"));
+    expect(retryAfter).toBeGreaterThanOrEqual(1);
+    expect(retryAfter).toBeLessThanOrEqual(60);
+  });
+
   it("rate limits a single client", async () => {
     const ip = freshIp();
     const statuses: number[] = [];

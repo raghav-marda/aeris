@@ -1,4 +1,4 @@
-// Minimal in-memory sliding-window rate limiter for the LLM-backed API
+// Minimal in-memory fixed-window rate limiter for the LLM-backed API
 // routes. This app is stateless and has no database by design (see
 // README), so a fixed-size in-process map is the right tool here — it
 // resets on redeploy, which is acceptable for abuse-prevention rather than
@@ -10,28 +10,52 @@ interface Bucket {
   windowStartMs: number;
 }
 
-const WINDOW_MS = 60_000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 12;
+export interface RateLimitResult {
+  readonly limited: boolean;
+  /** Whole seconds until the current window ends (for a Retry-After header). */
+  readonly retryAfterSeconds: number;
+}
+
+export const WINDOW_MS = 60_000; // 1 minute
+export const MAX_REQUESTS_PER_WINDOW = 12;
 const MAX_BUCKETS = 5000; // cap memory use
 
 const buckets = new Map<string, Bucket>();
 
-export function isRateLimited(key: string): boolean {
-  const now = Date.now();
+const isExpired = (bucket: Bucket, now: number): boolean => now - bucket.windowStartMs >= WINDOW_MS;
+
+/** Makes room for one new key: drops expired windows first, then the oldest key. */
+function makeRoom(now: number): void {
+  if (buckets.size < MAX_BUCKETS) return;
+  for (const [key, bucket] of buckets) {
+    if (isExpired(bucket, now)) buckets.delete(key);
+  }
+  if (buckets.size < MAX_BUCKETS) return;
+  const oldestKey = buckets.keys().next().value;
+  if (oldestKey !== undefined) buckets.delete(oldestKey);
+}
+
+/** Counts this request against `key` and reports whether it is over the limit. */
+export function checkRateLimit(key: string, now: number = Date.now()): RateLimitResult {
   const existing = buckets.get(key);
 
-  if (!existing || now - existing.windowStartMs > WINDOW_MS) {
-    if (buckets.size >= MAX_BUCKETS) {
-      // Evict the oldest entry rather than let the map grow unbounded.
-      const oldestKey = buckets.keys().next().value;
-      if (oldestKey) buckets.delete(oldestKey);
-    }
+  if (!existing || isExpired(existing, now)) {
+    // Only a brand-new key can grow the map; resetting an old window cannot.
+    if (!existing) makeRoom(now);
     buckets.set(key, { count: 1, windowStartMs: now });
-    return false;
+    return { limited: false, retryAfterSeconds: Math.ceil(WINDOW_MS / 1000) };
   }
 
   existing.count += 1;
-  return existing.count > MAX_REQUESTS_PER_WINDOW;
+  const remainingMs = existing.windowStartMs + WINDOW_MS - now;
+  return {
+    limited: existing.count > MAX_REQUESTS_PER_WINDOW,
+    retryAfterSeconds: Math.max(1, Math.ceil(remainingMs / 1000)),
+  };
+}
+
+export function isRateLimited(key: string, now: number = Date.now()): boolean {
+  return checkRateLimit(key, now).limited;
 }
 
 export function clientKeyFrom(req: Request): string {

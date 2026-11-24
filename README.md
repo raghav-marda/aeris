@@ -85,8 +85,8 @@ station, so the AQI shown is _indicative_.
 - **Efficiency.** Upstream calls are cached (10 min air, 24 h geocoding, bounded size), every
   request has a timeout, the model runs with thinking disabled and token caps, the browser makes no
   third-party calls, and there are no heavy client dependencies.
-- **Testing.** 130+ tests: engine and planner unit tests, number-guard and Gemini client tests,
-  API route tests (validation, limits, rate limiting, upstream failure), full user-flow component
+- **Testing.** 145+ tests (about 98% line coverage): engine and planner unit tests, number-guard and Gemini client tests,
+  API route tests (validation, byte-based size limit, rate limiting with Retry-After, upstream failure), full user-flow component
   tests, and automated accessibility checks with axe.
 - **Accessibility.** Semantic landmarks and heading order, labelled controls, live regions for
   status and errors, focus moved to the plan, keyboard-only use, skip link, 44px touch targets,
